@@ -9,9 +9,10 @@
             font-family: Arial, sans-serif;
             background-color: #f4f4f4;
             display: flex;
+            flex-direction: column; /* Permite apilar elementos como el contenedor y el enlace */
             justify-content: center;
             align-items: center;
-            min-height: 80vh; /* Centra verticalmente */
+            min-height: 80vh;
             margin: 0;
         }
 
@@ -22,6 +23,7 @@
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             width: 300px;
             text-align: center;
+            margin-bottom: 15px; /* Espacio debajo del contenedor del formulario */
         }
 
         h2 {
@@ -55,9 +57,14 @@
             margin-bottom: 15px;
             font-weight: bold;
         }
+         .success-message { /* Estilo para mensajes de éxito */
+            color: green;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
 
         button {
-            background-color: #5cb85c; /* Verde */
+            background-color: #5cb85c;
             color: white;
             padding: 10px 15px;
             border: none;
@@ -73,14 +80,14 @@
             background-color: #4cae4c;
         }
 
-        /* Estilo para el enlace o botón de crear usuario */
-        .create-link {
-            display: block; /* Para que ocupe su propia línea */
-            margin-top: 15px;
-            color: #0275d8; /* Azul */
+        .create-link, .forgot-password-link { /* Estilo para enlaces debajo del formulario */
+            display: block;
+            margin-top: 5px; /* Menos margen para que estén más cerca */
+            color: #0275d8;
             text-decoration: none;
+            font-size: 0.9em; /* Letra un poco más pequeña */
         }
-         .create-link:hover {
+         .create-link:hover, .forgot-password-link:hover {
              text-decoration: underline;
          }
 
@@ -104,13 +111,13 @@
             String creationSuccessMessage = (String) request.getAttribute("creationSuccessMessage");
             if (creationSuccessMessage != null) {
          %>
-                <p class="success-message"><%= creationSuccessMessage %></p> <%-- Necesitas definir .success-message en tu CSS --%>
+                <p class="success-message"><%= creationSuccessMessage %></p>
          <%
             }
          %>
 
 
-        <form action="login" method="POST"> <%-- La acción debe apuntar a tu Servlet de login --%>
+        <form action="login" method="POST">
             <div class="form-group">
                 <label for="username">Usuario:</label>
                 <input type="text" id="username" name="username" required>
@@ -122,9 +129,15 @@
             <button type="submit">Ingresar</button>
         </form>
 
-        <%-- Enlace o botón para ir a la página de crear usuario --%>
-        <a href="Signup" class="create-link">¿No tienes cuenta? Crea una aquí.</a>
-      
+        <%-- Enlace para ir a la página de crear usuario --%>
+        <a href="Signup" class="Sign-up-link">¿No tienes cuenta? Crea una aquí.</a>
+
+        <%-- Enlace para ir a la página de olvidé mi contraseña --%>
+         <a href="forgotPassword" class="forgot-password-link">¿Olvidaste tu contraseña?</a>
+
     </div>
+    <%-- Aquí podrías añadir otros contenedores si tuvieras más formularios apilados,
+         pero ahora la creación va en otra página. --%>
+
 </body>
 </html>
