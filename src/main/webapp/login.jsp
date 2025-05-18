@@ -52,13 +52,22 @@
             font-size: 1em;
         }
 
+        /* Estilos para los mensajes */
         .error-message {
-            color: red;
+            color: #a94442; /* Rojo oscuro */
+            background-color: #f2dede; /* Fondo rojo claro */
+            border: 1px solid #ebccd1;
+            padding: 10px; /* Añadido padding para que se vea mejor */
+            border-radius: 4px; /* Añadido border-radius */
             margin-bottom: 15px;
             font-weight: bold;
         }
-         .success-message { /* Estilo para mensajes de éxito */
-            color: green;
+        .success-message { /* Estilo para mensajes de éxito */
+             color: #3c763d; /* Verde oscuro */
+            background-color: #dff0d8; /* Fondo verde claro */
+            border: 1px solid #d6e9c6;
+            padding: 10px; /* Añadido padding */
+            border-radius: 4px; /* Añadido border-radius */
             margin-bottom: 15px;
             font-weight: bold;
         }
@@ -73,21 +82,21 @@
             font-size: 1.1em;
             width: 100%;
             transition: background-color 0.3s ease;
-             margin-bottom: 10px; /* Espacio debajo del botón */
+            margin-bottom: 10px; /* Espacio debajo del botón */
         }
 
         button:hover {
             background-color: #4cae4c;
         }
 
-        .create-link, .forgot-password-link { /* Estilo para enlaces debajo del formulario */
+        .Sign-up-link, .forgot-password-link { /* Estilo para enlaces debajo del formulario */
             display: block;
             margin-top: 5px; /* Menos margen para que estén más cerca */
             color: #0275d8;
             text-decoration: none;
             font-size: 0.9em; /* Letra un poco más pequeña */
         }
-         .create-link:hover, .forgot-password-link:hover {
+         .Sign-up-link:hover, .forgot-password-link:hover {
              text-decoration: underline;
          }
 
@@ -97,24 +106,38 @@
     <div class="login-container">
         <h2>Iniciar Sesión</h2>
 
-        <%-- Mostrar mensaje de error de Login si existe --%>
+        <%-- *** BLOQUE JSP PARA MOSTRAR MENSAJES (Error de Login, Éxito de Creación, Éxito de Reset) *** --%>
         <%
+            // 1. Mensaje de error de login (si viene del LoginController como atributo)
             String loginErrorMessage = (String) request.getAttribute("errorMessage");
+
+            // 2. Mensaje de éxito de creación (si viene de CreateUsuarioController como atributo)
+            String creationSuccessMessage = (String) request.getAttribute("creationSuccessMessage");
+
+            // 3. Mensaje de éxito de restablecimiento de contraseña (si viene del ResetPasswordController como parámetro de URL)
+            String resetSuccessParam = request.getParameter("resetSuccess");
+            boolean resetSuccess = "true".equals(resetSuccessParam);
+
             if (loginErrorMessage != null) {
+                // Mostrar error de login
         %>
                 <p class="error-message"><%= loginErrorMessage %></p>
         <%
-            }
+            } else if (creationSuccessMessage != null) {
+                // Mostrar mensaje de éxito de creación
         %>
-         <%-- Mostrar mensaje de éxito de Creación si vienes desde la página de creación --%>
-         <%
-            String creationSuccessMessage = (String) request.getAttribute("creationSuccessMessage");
-            if (creationSuccessMessage != null) {
-         %>
                 <p class="success-message"><%= creationSuccessMessage %></p>
-         <%
+        <%
+            } else if (resetSuccess) {
+                // Mostrar mensaje de éxito de restablecimiento de contraseña
+        %>
+                <p class="success-message">Contraseña recuperada exitosamente. Ya puedes iniciar sesión con tu nueva contraseña.</p>
+        <%
             }
-         %>
+            // Nota: Los mensajes de error de validación del formulario de login (ej. campos vacíos)
+            // deberían manejarse en el LoginController antes de llegar aquí, o con JS en el cliente.
+        %>
+        <%-- *** FIN DEL BLOQUE DE MENSAJES *** --%>
 
 
         <form action="login" method="POST">
@@ -129,11 +152,15 @@
             <button type="submit">Ingresar</button>
         </form>
 
-        <%-- Enlace para ir a la página de crear usuario --%>
-        <a href="Signup" class="Sign-up-link">¿No tienes cuenta? Crea una aquí.</a>
+        <div class="links">
+            <%-- Enlace para ir a la página de crear usuario --%>
+            <%-- Asegúrate de que esta URL "Signup" coincida con el mapeo de tu CreateUsuarioController --%>
+            <a href="Signup" class="Sign-up-link">¿No tienes cuenta? Crea una aquí.</a>
 
-        <%-- Enlace para ir a la página de olvidé mi contraseña --%>
-         <a href="forgotPassword" class="forgot-password-link">¿Olvidaste tu contraseña?</a>
+            <%-- Enlace para ir a la página de olvidé mi contraseña --%>
+            <%-- Asegúrate de que esta URL "forgotPassword" coincida con el mapeo de tu ForgotPasswordController --%>
+            <a href="forgotPassword" class="forgot-password-link">¿Olvidaste tu contraseña?</a>
+        </div>
 
     </div>
     <%-- Aquí podrías añadir otros contenedores si tuvieras más formularios apilados,

@@ -19,26 +19,32 @@ import javax.mail.internet.*;
 // Importaciones de activation si usas FileDataSource para adjuntos, aunque aquí no se usan
 // import javax.activation.*;
 
+// *** Importación para BCrypt hashing ***
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
+
 public class UsuarioService {
 
     private UsuarioRepository usuarioRepository;
     private PasswordRecoveryTokenRepository tokenRepository; // Repositorio de tokens
 
-    // Usamos el mismo nombre de la unidad de persistencia solo como referencia.
-    // La gestión real de EMF/EM está en los repositorios en este ejemplo.
-    // private static final String PERSISTENCE_UNIT_NAME = "UnidadPersistencia";
+    // *** Instancia del encoder BCrypt ***
+    private final BCryptPasswordEncoder passwordEncoder; // <<-- Declara el encoder BCrypt
+
+
     /**
      * Constructor de la clase de servicio. Inicializa los repositorios que
-     * utilizará.
+     * utilizará y el encoder BCrypt.
      */
     public UsuarioService() {
         this.usuarioRepository = new UsuarioRepository();
         this.tokenRepository = new PasswordRecoveryTokenRepository(); // Instanciar el repositorio de tokens
+        // *** Inicializa el encoder BCrypt ***
+        this.passwordEncoder = new BCryptPasswordEncoder(); // <<-- Inicialízalo aquí
     }
 
     /**
-     * Intenta autenticar un usuario con username y password. ¡ASUMIMOS que el
-     * password guardado en DB está HASHEADO!
+     * Intenta autenticar un usuario con username y password. ¡Ahora usando BCrypt!
      *
      * @param username El nombre de usuario ingresado.
      * @param password La contraseña PLANA ingresada.
@@ -46,34 +52,45 @@ public class UsuarioService {
      * de lo contrario null.
      */
     public Usuario autenticar(String username, String password) {
+        System.out.println("DEBUG AUTH: Intento de autenticar usuario: " + username); // Log inicio
+
         if (username == null || username.trim().isEmpty() || password == null || password.trim().isEmpty()) {
-            System.out.println("Intento de autenticación fallido: Username o password nulos/vacíos.");
+            System.out.println("DEBUG AUTH: Datos de login nulos/vacíos.");
+            // En el controlador (LoginController), deberías poner un mensaje de error en el request antes de reenviar a la página.
             return null;
         }
 
         Usuario usuario = usuarioRepository.findByUsername(username);
-        if (usuario != null) {
-            // Aquí debes COMPARAR el 'password' PLANA ingresada con el password HASHEADA de la DB.
-            // ¡¡¡NUNCA COMPARES passwords planas o hashes si no usas una LIBRERÍA segura!!!
-            // Necesitas la MISMA librería de hashing que usas para crear/resetear.
+        System.out.println("DEBUG AUTH: Usuario encontrado en DB: " + (usuario != null ? usuario.getUsername() : "null")); // Log si se encontró
 
-            // Ejemplo CONCEPTUAL (NECESITAS IMPLEMENTACIÓN SEGURA USANDO UNA LIBRERÍA)
-            if (verifyPassword(password, usuario.getPassword())) { // <<-- USA TU MÉTODO DE VERIFICACIÓN DE HASHING SEGURO
+        if (usuario != null) {
+            String storedHashedPassword = usuario.getPassword();
+            // *** Log seguro: No imprimas la password plana en producción ***
+            System.out.println("DEBUG AUTH: Password plana ingresada (NO LOG EN PROD): [NO MOSTRAR]");
+            System.out.println("DEBUG AUTH: Password almacenada (hashed): " + storedHashedPassword); // Log password almacenada
+
+            // *** Usar el método verifyPassword con BCrypt ***
+            boolean passwordMatch = verifyPassword(password, storedHashedPassword);
+            System.out.println("DEBUG AUTH: Resultado de verifyPassword (BCrypt): " + passwordMatch); // Log resultado de verificación
+
+            if (passwordMatch) {
                 System.out.println("Usuario '" + username + "' autenticado con éxito.");
                 return usuario; // Retorna el usuario autenticado
             } else {
                 System.out.println("Intento de autenticación fallido: Contraseña incorrecta para usuario '" + username + "'.");
+                 // En el controlador (LoginController), deberías poner un mensaje de error en el request antes de reenviar a la página.
                 return null; // Contraseña incorrecta
             }
         } else {
             System.out.println("Intento de autenticación fallido: Username '" + username + "' no encontrado.");
+             // En el controlador (LoginController), deberías poner un mensaje de error en el request antes de reenviar a la página.
             return null; // Usuario no encontrado
         }
     }
 
     /**
      * Intenta crear un nuevo usuario. Verifica si el username ya existe antes
-     * de guardar. ¡HASHEA la contraseña ANTES de guardar!
+     * de guardar. ¡Ahora HASHEA la contraseña usando BCrypt ANTES de guardar!
      *
      * @param usuario El objeto Usuario a crear (con password PLANA).
      * @return true si el usuario se creó con éxito, false si el username ya
@@ -96,8 +113,8 @@ public class UsuarioService {
             // El username no existe, proceder con la creación
 
             try {
-                // ¡¡¡HASHEA LA CONTRASEÑA ANTES DE GUARDAR!!!
-                String hashedPassword = hashPassword(usuario.getPassword()); // <<-- USAR TU MÉTODO DE HASHING SEGURO
+                // *** ¡HASHEA LA CONTRASEÑA ANTES DE GUARDAR USANDO BCrypt! ***
+                String hashedPassword = hashPassword(usuario.getPassword()); // <<-- Llama al método hashPassword (ahora con BCrypt)
                 usuario.setPassword(hashedPassword); // Establece la contraseña HASHEADA
 
                 usuarioRepository.save(usuario); // El save del repositorio maneja persist
@@ -149,19 +166,19 @@ public class UsuarioService {
 
     /**
      * Actualiza los datos de un usuario existente. ¡Si se actualiza la
-     * contraseña, debe ser HASHEADA ANTES!
+     * contraseña, debe ser HASHEADA ANTES (si viene plana)!
      *
      * @param usuario El objeto Usuario con los datos actualizados.
+     * (Asumimos que la contraseña en este objeto ya viene hasheada si se cambió).
      */
     public void actualizarUsuario(Usuario usuario) {
         if (usuario == null || usuario.getUsername() == null) {
             System.err.println("Error al actualizar usuario: Objeto usuario o username es null.");
             return;
         }
-        // Lógica para hash de password si se está actualizando:
-        // Necesitas saber si el password en el objeto 'usuario' es el plano nuevo o el hash viejo.
-        // Un enfoque común es tener un DTO o un método setPasswordFromPlain() que hashee.
-        // Aquí, asumimos que si llamas a este método, la password ya viene preparada (ej. hasheada si se cambió)
+        // Nota: Si en el proceso de actualización la contraseña se envía plana,
+        // DEBES hashearla aquí ANTES de guardarla en la DB.
+        // Si ya viene hasheada (ej. la obtuviste de la DB y no la cambiaste), no necesitas hashear de nuevo.
         usuarioRepository.save(usuario); // El save del repositorio hace merge
         System.out.println("Usuario '" + usuario.getUsername() + "' actualizado.");
     }
@@ -234,10 +251,28 @@ public class UsuarioService {
 
             return recoveryToken; // Retorna el token guardado si todo fue bien (email enviado)
 
-        } catch (Exception e) {
+        } catch (Exception e) { // Capturamos Exception general aquí para manejar errores de DB o Email
             System.err.println("Error en el proceso de solicitud de recuperación para usuario " + usuario.getUsername() + " (" + email + "): " + e.getMessage());
             e.printStackTrace();
-            // Manejar el error: loggear, no re-lanzar si no quieres que falle la solicitud visiblemente
+            // !!! IMPORTANTE: Si el email falla (MessagingException), deberías eliminar el token de la DB !!!
+            // Aquí simplemente retornamos null, pero lo ideal es borrar el token.
+            // Puedes refactorizar para capturar MessagingException específicamente y borrar el token.
+            // Ej:
+            // try {
+            //    tokenRepository.save(recoveryToken);
+            //    sendPasswordRecoveryEmail(email, recoveryLink);
+            //    return recoveryToken;
+            // } catch (MessagingException e) {
+            //    System.err.println("Error enviando email... ");
+            //    tokenRepository.deleteByToken(token); // <-- Elimina el token si el email falla
+            //    e.printStackTrace();
+            //    return null; // Indica fallo
+            // } catch (Exception e) { // Otros errores (DB al guardar token, etc.)
+            //    System.err.println("Error guardando token u otro error... ");
+            //    e.printStackTrace();
+            //    return null; // Indica fallo
+            // }
+
             return null; // Indica fallo (al guardar token o enviar email)
         }
     }
@@ -275,13 +310,15 @@ public class UsuarioService {
      * token como usado.
      *
      * @param tokenString El valor del token string.
-     * @param newPassword La nueva contraseña (PLANA - ¡DEBES HASHEARLA!).
+     * @param newPlainPassword La nueva contraseña (PLANA - ¡DEBES HASHEARLA!).
      * @return true si el restablecimiento fue exitoso, false si el token es
      * inválido o hubo error.
      */
-    public boolean resetPassword(String tokenString, String newPassword) {
-        if (tokenString == null || tokenString.trim().isEmpty() || newPassword == null || newPassword.trim().isEmpty()) {
-            System.err.println("Error de restablecimiento: Token o nueva contraseña vacíos.");
+    public boolean resetPassword(String tokenString, String newPlainPassword) {
+        System.out.println("DEBUG RESET: Intento de restablecer password para token: " + tokenString); // Log inicio
+
+        if (tokenString == null || tokenString.trim().isEmpty() || newPlainPassword == null || newPlainPassword.trim().isEmpty()) {
+            System.err.println("DEBUG RESET: Error de restablecimiento: Token o nueva password vacíos.");
             return false; // Validación básica
         }
 
@@ -289,48 +326,84 @@ public class UsuarioService {
         PasswordRecoveryToken recoveryToken = tokenRepository.findByToken(tokenString); // Reusa findByToken para validar estado y expiración
 
         if (recoveryToken == null) {
-            System.err.println("Restablecimiento fallido: Token '" + tokenString + "' inválido, expirado o usado. No se puede restablecer la contraseña.");
+            System.err.println("DEBUG RESET: Restablecimiento fallido: Token '" + tokenString + "' inválido, expirado o usado. No se puede restablecer la contraseña.");
             return false; // Token inválido, expirado o ya usado
         }
 
         Usuario userToUpdate = recoveryToken.getUser();
         if (userToUpdate == null) {
-            System.err.println("Error interno: Token válido pero sin usuario asociado. Token: " + tokenString);
+            System.err.println("DEBUG RESET: Error interno: Token válido pero sin usuario asociado. Token: " + tokenString);
             // Considerar loggear esto como un error grave interno
             return false; // Error interno
         }
 
         // 2. Actualizar la contraseña del usuario
         try {
-            // ¡¡¡AQUÍ DEBES HASHEAR LA newPassword ANTES DE GUARDARLA!!!
-            // Usa el MISMO MÉTODO y LIBRERÍA de hashing que en crearUsuario.
-            String hashedPassword = hashPassword(newPassword); // <<-- USAR TU MÉTODO DE HASHING SEGURO
+            // *** ¡HASHEA LA newPlainPassword USANDO BCrypt ANTES DE GUARDARLA! ***
+            String hashedNewPassword = hashPassword(newPlainPassword); // <<-- Llama al método hashPassword (ahora con BCrypt)
+            System.out.println("DEBUG RESET: Nueva password hasheada (NO LOG EN PROD): [NO MOSTRAR]"); // Log seguro
+            System.out.println("DEBUG RESET: Usuario a actualizar: " + userToUpdate.getUsername()); // Log usuario
 
-            userToUpdate.setPassword(hashedPassword); // Establece el password HASHEADO
+            userToUpdate.setPassword(hashedNewPassword); // Establece el password HASHEADO
             usuarioRepository.save(userToUpdate); // Guarda el usuario actualizado (save hace merge)
+            System.out.println("DEBUG RESET: Usuario actualizado con nueva password."); // Log
 
             // 3. Marcar el token como usado INMEDIATAMENTE después del reset exitoso
             tokenRepository.markTokenAsUsed(tokenString);
+            System.out.println("DEBUG RESET: Token marcado como usado: " + tokenString); // Log
 
             System.out.println("Contraseña restablecida con éxito para usuario: " + userToUpdate.getUsername() + " usando token " + tokenString);
             return true; // Éxito
 
         } catch (Exception e) {
-            System.err.println("Error al restablecer contraseña para usuario " + userToUpdate.getUsername() + " con token " + tokenString + ": " + e.getMessage());
+            System.err.println("DEBUG RESET: Error al restablecer contraseña para usuario " + userToUpdate.getUsername() + " con token " + tokenString + ": " + e.getMessage());
             e.printStackTrace();
             // Manejar el error (DB al guardar, etc.)
             return false; // Fallo en el proceso
         }
     }
 
-    // --- Métodos Auxiliares (DEBES IMPLEMENTAR o SUSTITUIR POR UNA LIBRERÍA) ---
+    // --- Implementación de los métodos de Hashing con BCrypt ---
+
     /**
-     * Genera un token seguro y único. DEBE usar un generador de números
-     * aleatorios criptográficamente seguro. El token debe ser suficientemente
-     * largo para ser impredecible. La longitud y el formato deben coincidir con
-     * lo que tu columna 'token' en la DB pueda almacenar.
+     * Hashea una contraseña plana usando BCrypt.
+     * Implementación segura con BCryptPasswordEncoder.
+     * @param password La contraseña plana a hashear.
+     * @return La contraseña hasheada (formato BCrypt).
      */
-    private String generateSecureToken() {
+    private String hashPassword(String password) {
+        // Usar el encoder BCrypt para hashear
+        System.out.println("DEBUG HASH: Usando BCrypt para hashear password.");
+        return this.passwordEncoder.encode(password);
+    }
+
+    /**
+     * Verifica una contraseña plana contra una contraseña hasheada usando BCrypt.
+     * Implementación segura con BCryptPasswordEncoder.
+     * @param plainPassword La contraseña plana ingresada por el usuario.
+     * @param hashedPassword La contraseña hasheada (formato BCrypt) almacenada en la base de datos.
+     * @return true si la contraseña plana coincide con la hasheada, false de lo contrario.
+     */
+    private boolean verifyPassword(String plainPassword, String hashedPassword) {
+         // Usar el encoder BCrypt para verificar
+         System.out.println("DEBUG VERIFY: Usando BCrypt para verificar password.");
+         // BCrypt.matches retorna false si el hash almacenado es null, vacío o no es un hash BCrypt válido.
+         if (hashedPassword == null || hashedPassword.trim().isEmpty()) {
+             System.out.println("DEBUG VERIFY: Hashed password from DB is null or empty.");
+             return false;
+         }
+         return this.passwordEncoder.matches(plainPassword, hashedPassword);
+    }
+
+
+    // --- Métodos Auxiliares (generateSecureToken, calculateExpiryDate, sendPasswordRecoveryEmail) ---
+
+    /**
+     * Genera un token seguro y único para recuperación de contraseña.
+     * Usa SecureRandom y UUID para mayor seguridad.
+     * Ajusta la longitud según tu columna 'token' en la DB.
+     */
+     private String generateSecureToken() {
         // Ejemplo usando SecureRandom y UUID (mejor que solo UUID)
         SecureRandom random = new SecureRandom();
         byte[] bytes = new byte[32]; // 32 bytes = 256 bits de aleatoriedad
@@ -340,12 +413,14 @@ public class UsuarioService {
         String token = UUID.randomUUID().toString().replace("-", "") + randomPart;
         // Ajusta la longitud final según el tamaño de tu columna 'token' en la base de datos (ej. VARCHAR(255) o más)
         // Si la longitud es muy larga, truncar o ajustar el tamaño de los bytes.
+        // Un hash BCrypt es de 60 caracteres, tu token podría ser más largo.
+        // Asegúrate de que la columna token en la DB es suficiente grande (ej. VARCHAR(255) o TEXT)
         if (token.length() > 255) { // Ejemplo: si tu columna es VARCHAR(255)
-            token = token.substring(0, 255);
+             token = token.substring(0, 255);
         }
-        System.out.println("Generated Token (Placeholder): " + token);
+        System.out.println("Generated Token (Secure): " + token); // Cambiado el log
         return token;
-    }
+     }
 
     /**
      * Calcula la fecha de expiración.
@@ -357,41 +432,6 @@ public class UsuarioService {
         return new Date(System.currentTimeMillis() + milliseconds);
     }
 
-    /**
-     * HASHEA la contraseña usando un algoritmo seguro (ej. bcrypt, Argon2).
-     * NUNCA Almacenar contraseñas planas en la DB. NECESITAS UNA LIBRERÍA DE
-     * HASHING SEGURA (ej. Spring Security Crypto, Apache Shiro Crypto, jBCrypt,
-     * PBKDF2 con una implementación segura).
-     *
-     * @param password La contraseña plana a hashear.
-     * @return El hash de la contraseña.
-     */
-    private String hashPassword(String password) {
-        // ESTO ES UN PLACEHOLDER NO SEGURO. SUSTITUYE POR UNA LIBRERÍA REAL.
-        System.out.println("ADVERTENCIA: Usando hashing placeholder. ¡Implementa hashing seguro!");
-        // Un placeholder muy básico que NO ES SEGURO para producción:
-        // Simplemente prefijamos para que sepamos que NO está hasheada correctamente.
-        return "{UNSAFE_HASH_PLACEHOLDER}" + password;
-    }
-
-    /**
-     * VERIFICA si una contraseña PLANA coincide con un hash ALMACENADO. Debe
-     * usar la MISMA LIBRERÍA y algoritmo que hashPassword.
-     *
-     * @param plainPassword La contraseña plana ingresada por el usuario.
-     * @param hashedPassword El hash de la contraseña almacenado en la base de
-     * datos.
-     * @return true si la contraseña plana coincide con el hash, false de lo
-     * contrario.
-     */
-    private boolean verifyPassword(String plainPassword, String hashedPassword) {
-        // ESTO ES UN PLACEHOLDER NO SEGURO. SUSTITUYE POR UNA LIBRERÍA REAL.
-        System.out.println("ADVERTENCIA: Usando verificación de hashing placeholder. ¡Implementa verificación segura!");
-        // Para el placeholder "{UNSAFE_HASH_PLACEHOLDER}" + password
-        return hashedPassword != null && hashedPassword.equals("{UNSAFE_HASH_PLACEHOLDER}" + plainPassword);
-
-        // Para hashing real, la lógica sería diferente, ej: bcrypt.checkpw(plainPassword, hashedPassword)
-    }
 
     /**
      * Envía el email de recuperación de contraseña. Requiere configuración del
@@ -401,8 +441,9 @@ public class UsuarioService {
      * @param recipientEmail La dirección de email del destinatario.
      * @param recoveryLink El enlace de recuperación que se incluirá en el
      * email.
+     * @throws MessagingException Si ocurre un error durante el envío del email.
      */
-    private void sendPasswordRecoveryEmail(String recipientEmail, String recoveryLink) throws MessagingException { // <<-- Ahora lanza MessagingException
+     private void sendPasswordRecoveryEmail(String recipientEmail, String recoveryLink) throws MessagingException { // <<-- Lanza MessagingException
 
         // --- Configuración del servidor de email ---
         // **** DEBES CAMBIAR ESTOS VALORES ****
@@ -416,24 +457,44 @@ public class UsuarioService {
         Properties props = new Properties();
         props.put("mail.smtp.auth", "true"); // Generalmente true
 
+        // Propiedades Esenciales para Conexión
+        props.put("mail.smtp.host", smtpHost); // <-- Indica el servidor SMTP
+        props.put("mail.smtp.port", smtpPort); // <-- Indica el puerto
+
+
         // Configuración de seguridad (TLS o SSL)
+        // Para Gmail en puerto 587, usamos STARTTLS (useTLS = true, useSSL = false)
         boolean useTLS = true; // <-- Ajusta a true si tu servidor SMTP usa STARTTLS en puerto 587
         boolean useSSL = false; // <-- Ajusta a true si tu servidor SMTP usa SSL directo en puerto 465
 
         if (useTLS) {
             props.put("mail.smtp.starttls.enable", "true"); // Habilitar STARTTLS
-            props.put("mail.smtp.port", smtpPort); // Puerto para STARTTLS (normalmente 587)
+
+            // *** Intenta forzar el uso de protocolos TLS modernos para el handshake ***
+            // Esto ayuda con el error "No appropriate protocol" en entornos modernos.
+            props.put("mail.smtp.ssl.protocols", "TLSv1.2 TLSv1.3"); // ¡Separados por ESPACIO!
+
+            // En algunos entornos antiguos o con problemas de compatibilidad, puede ser útil
+            // especificar la fábrica de sockets SSL. Con JDK 23 y Tomcat moderno, no suele ser necesario.
+            // try {
+            //     MailSSLSocketFactory sf = new MailSSLSocketFactory();
+            //     sf.setTrustAllHosts(true); // ¡PELIGROSO en producción! Solo para depuración/pruebas si falla el certificado.
+            //     props.put("mail.smtp.ssl.socketFactory", sf);
+            // } catch (Exception e) {
+            //     System.err.println("Error configuring SSL socket factory: " + e.getMessage());
+            //     e.printStackTrace();
+            // }
+
         }
-        if (useSSL) {
+        if (useSSL) { // Configuración para SSL directo en puerto 465 (menos común ahora)
             props.put("mail.smtp.ssl.enable", "true"); // Habilitar SSL/TLS en puerto dedicado
-            props.put("mail.smtp.port", smtpPort); // Puerto para SSL (normalmente 465)
-            // props.put("mail.smtp.ssl.protocols", "TLSv1.2"); // Opcional: especificar protocolo TLS
-            // Si usas 465 y falla, puede que necesites la siguiente línea (para Tomcat/GlassFish viejos a veces)
-            // props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+            // La lista de protocolos también iría aquí si aplicara
+            // props.put("mail.smtp.ssl.protocols", "TLSv1.2 TLSv1.3");
+            // props.put("mail.smtp.ssl.socketFactory.class", "javax.net.ssl.SSLSocketFactory"); // A veces necesario para SSL directo
         }
 
         // Debugging opcional: activa esto para ver la conversación entre tu app y el servidor SMTP
-            props.put("mail.debug", "true");
+        props.put("mail.debug", "true"); // <<-- Asegúrate de que esté activa
 
         // Crear una sesión de email
         // Se autentica usando el username y password proporcionados
