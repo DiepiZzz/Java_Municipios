@@ -9,7 +9,7 @@
             font-family: Arial, sans-serif;
             background-color: #f4f4f4;
             display: flex;
-            flex-direction: column;
+            flex-direction: column; 
             justify-content: center;
             align-items: center;
             min-height: 80vh;
@@ -23,7 +23,7 @@
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             width: 300px;
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 15px; 
         }
 
         h2 {
@@ -52,20 +52,21 @@
             font-size: 1em;
         }
 
+       
         .error-message {
-            color: #a94442;
-            background-color: #f2dede;
+            color: #a94442; 
+            background-color: #f2dede; 
             border: 1px solid #ebccd1;
-            padding: 10px;
-            border-radius: 4px;
+            padding: 10px; 
+            border-radius: 4px; 
             margin-bottom: 15px;
             font-weight: bold;
         }
-        .success-message {
-            color: #3c763d;
-            background-color: #dff0d8;
+        .success-message { 
+             color: #3c763d;
+            background-color: #dff0d8; 
             border: 1px solid #d6e9c6;
-            padding: 10px;
+            padding: 10px; 
             border-radius: 4px;
             margin-bottom: 15px;
             font-weight: bold;
@@ -88,16 +89,16 @@
             background-color: #4cae4c;
         }
 
-        .Sign-up-link, .forgot-password-link {
+        .Sign-up-link, .forgot-password-link { 
             display: block;
-            margin-top: 5px;
+            margin-top: 5px; 
             color: #0275d8;
             text-decoration: none;
-            font-size: 0.9em;
+            font-size: 0.9em; 
         }
-        .Sign-up-link:hover, .forgot-password-link:hover {
-            text-decoration: underline;
-        }
+         .Sign-up-link:hover, .forgot-password-link:hover {
+             text-decoration: underline;
+         }
 
     </style>
 </head>
@@ -105,26 +106,42 @@
     <div class="login-container">
         <h2>Iniciar Sesión</h2>
 
+     
         <%
+           
             String loginErrorMessage = (String) request.getAttribute("errorMessage");
+
+         
             String creationSuccessMessage = (String) request.getAttribute("creationSuccessMessage");
+
+           
             String resetSuccessParam = request.getParameter("resetSuccess");
             boolean resetSuccess = "true".equals(resetSuccessParam);
 
+           
+            String cssClass = ""; 
+
             if (loginErrorMessage != null) {
+                cssClass = "error-message"; 
         %>
                 <p class="<%= cssClass %>"><%= loginErrorMessage %></p>
         <%
             } else if (creationSuccessMessage != null) {
+                cssClass = "success-message"; 
         %>
                 <p class="<%= cssClass %>"><%= creationSuccessMessage %></p>
         <%
             } else if (resetSuccess) {
+              
+                cssClass = "success-message"; 
         %>
-                <p class="success-message">Contraseña recuperada exitosamente. Ya puedes iniciar sesión con tu nueva contraseña.</p>
+                <p class="<%= cssClass %>">Contraseña recuperada exitosamente. Ya puedes iniciar sesión con tu nueva contraseña.</p>
         <%
             }
+           
         %>
+       
+
 
         <form action="login" method="POST">
             <div class="form-group">
@@ -139,12 +156,15 @@
         </form>
 
         <div class="links">
+            
             <a href="Signup" class="Sign-up-link">¿No tienes cuenta? Crea una aquí.</a>
 
+           
             <a href="forgotPassword" class="forgot-password-link">¿Olvidaste tu contraseña?</a>
         </div>
 
     </div>
+   
 
 </body>
 </html>
