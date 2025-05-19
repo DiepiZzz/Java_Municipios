@@ -1,8 +1,7 @@
-package Model.Entities; // Asegura que este es el nombre correcto de tu paquete de entidades
+package Model.Entities;
 
 import java.io.Serializable;
 import java.util.Date;
-// Usar javax.persistence para JPA 2.2
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
@@ -10,35 +9,34 @@ import javax.persistence.JoinColumn;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
-import javax.persistence.Column; 
+import javax.persistence.Column;
 
 
 @Entity
-@Table(name = "password_recovery_tokens") 
+@Table(name = "password_recovery_tokens")
 public class PasswordRecoveryToken implements Serializable {
 
-    @Id 
+    @Id
     private String token;
 
-   
+
     @ManyToOne
-   
+
     @JoinColumn(name = "user_id", nullable = false)
     private Usuario user;
 
-    @Column(name = "expiry_date", nullable = false) 
-    @Temporal(TemporalType.TIMESTAMP) 
+    @Column(name = "expiry_date", nullable = false)
+    @Temporal(TemporalType.TIMESTAMP)
     private Date expiryDate;
 
-    @Column(name = "used", nullable = false) 
+    @Column(name = "used", nullable = false)
     private boolean used;
 
 
-    
     public PasswordRecoveryToken() {
     }
 
-   
+
     public PasswordRecoveryToken(String token, Usuario user, Date expiryDate, boolean used) {
         this.token = token;
         this.user = user;
@@ -46,7 +44,7 @@ public class PasswordRecoveryToken implements Serializable {
         this.used = used;
     }
 
-   
+
     public String getToken() {
         return token;
     }

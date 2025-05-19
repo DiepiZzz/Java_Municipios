@@ -12,8 +12,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-@WebServlet("/home")
-public class HomeController extends HttpServlet {
+@WebServlet("/graphics")
+public class GraphicsController extends HttpServlet {
 
     private MunicipioService municipioService;
 
@@ -21,31 +21,31 @@ public class HomeController extends HttpServlet {
     public void init() throws ServletException {
         super.init();
         this.municipioService = new MunicipioService();
-        System.out.println("HomeController initialized.");
+        System.out.println("GraphicsController initialized.");
     }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        System.out.println(">>>>>>> DEBUG: Entering HomeController doGet <<<<<<<");
+        System.out.println(">>>>>>> DEBUG: Entrando a doGet de GraphicsController <<<<<<<");
 
         HttpSession session = request.getSession(false);
 
         if (session == null || session.getAttribute("loggedInUser") == null) {
-            System.out.println("DEBUG Home: User not authenticated. Redirecting to login.");
+            System.out.println("DEBUG Graphics: Usuario no autenticado. Redirigiendo a login.");
             response.sendRedirect(request.getContextPath() + "/login.jsp");
             return;
         }
 
-        System.out.println("DEBUG Home: User authenticated. Loading municipalities.");
+        System.out.println("DEBUG Graphics: Usuario autenticado. Cargando municipios para gráficos.");
 
         List<Municipio> municipios = municipioService.obtenerTodosLosMunicipios();
 
         request.setAttribute("municipios", municipios);
 
-        System.out.println("DEBUG Home: Forwarding to home.jsp with municipality list.");
-        request.getRequestDispatcher("/home.jsp").forward(request, response);
+        System.out.println("DEBUG Graphics: Reenviando a graphics.jsp con lista de municipios.");
+        request.getRequestDispatcher("/graphics.jsp").forward(request, response);
     }
 
     @Override

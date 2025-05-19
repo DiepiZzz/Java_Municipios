@@ -44,7 +44,7 @@ public class MunicipioRepository {
         em.close();
     }
 
-    public void delete(Integer id) {
+    public void deleteById(Integer id) {
         EntityManager em = emf.createEntityManager();
         em.getTransaction().begin();
         Municipio municipio = em.find(Municipio.class, id);

@@ -9,7 +9,7 @@
             font-family: Arial, sans-serif;
             background-color: #f4f4f4;
             display: flex;
-            flex-direction: column; /* Permite apilar elementos como el contenedor y el enlace */
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             min-height: 80vh;
@@ -23,7 +23,7 @@
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             width: 300px;
             text-align: center;
-            margin-bottom: 15px; /* Espacio debajo del contenedor del formulario */
+            margin-bottom: 15px;
         }
 
         h2 {
@@ -52,22 +52,21 @@
             font-size: 1em;
         }
 
-        /* Estilos para los mensajes */
         .error-message {
-            color: #a94442; /* Rojo oscuro */
-            background-color: #f2dede; /* Fondo rojo claro */
+            color: #a94442;
+            background-color: #f2dede;
             border: 1px solid #ebccd1;
-            padding: 10px; /* Añadido padding para que se vea mejor */
-            border-radius: 4px; /* Añadido border-radius */
+            padding: 10px;
+            border-radius: 4px;
             margin-bottom: 15px;
             font-weight: bold;
         }
-        .success-message { /* Estilo para mensajes de éxito */
-             color: #3c763d; /* Verde oscuro */
-            background-color: #dff0d8; /* Fondo verde claro */
+        .success-message {
+            color: #3c763d;
+            background-color: #dff0d8;
             border: 1px solid #d6e9c6;
-            padding: 10px; /* Añadido padding */
-            border-radius: 4px; /* Añadido border-radius */
+            padding: 10px;
+            border-radius: 4px;
             margin-bottom: 15px;
             font-weight: bold;
         }
@@ -82,23 +81,23 @@
             font-size: 1.1em;
             width: 100%;
             transition: background-color 0.3s ease;
-            margin-bottom: 10px; /* Espacio debajo del botón */
+            margin-bottom: 10px;
         }
 
         button:hover {
             background-color: #4cae4c;
         }
 
-        .Sign-up-link, .forgot-password-link { /* Estilo para enlaces debajo del formulario */
+        .Sign-up-link, .forgot-password-link {
             display: block;
-            margin-top: 5px; /* Menos margen para que estén más cerca */
+            margin-top: 5px;
             color: #0275d8;
             text-decoration: none;
-            font-size: 0.9em; /* Letra un poco más pequeña */
+            font-size: 0.9em;
         }
-         .Sign-up-link:hover, .forgot-password-link:hover {
-             text-decoration: underline;
-         }
+        .Sign-up-link:hover, .forgot-password-link:hover {
+            text-decoration: underline;
+        }
 
     </style>
 </head>
@@ -106,39 +105,26 @@
     <div class="login-container">
         <h2>Iniciar Sesión</h2>
 
-        <%-- *** BLOQUE JSP PARA MOSTRAR MENSAJES (Error de Login, Éxito de Creación, Éxito de Reset) *** --%>
         <%
-            // 1. Mensaje de error de login (si viene del LoginController como atributo)
             String loginErrorMessage = (String) request.getAttribute("errorMessage");
-
-            // 2. Mensaje de éxito de creación (si viene de CreateUsuarioController como atributo)
             String creationSuccessMessage = (String) request.getAttribute("creationSuccessMessage");
-
-            // 3. Mensaje de éxito de restablecimiento de contraseña (si viene del ResetPasswordController como parámetro de URL)
             String resetSuccessParam = request.getParameter("resetSuccess");
             boolean resetSuccess = "true".equals(resetSuccessParam);
 
             if (loginErrorMessage != null) {
-                // Mostrar error de login
         %>
-                <p class="error-message"><%= loginErrorMessage %></p>
+                <p class="<%= cssClass %>"><%= loginErrorMessage %></p>
         <%
             } else if (creationSuccessMessage != null) {
-                // Mostrar mensaje de éxito de creación
         %>
-                <p class="success-message"><%= creationSuccessMessage %></p>
+                <p class="<%= cssClass %>"><%= creationSuccessMessage %></p>
         <%
             } else if (resetSuccess) {
-                // Mostrar mensaje de éxito de restablecimiento de contraseña
         %>
                 <p class="success-message">Contraseña recuperada exitosamente. Ya puedes iniciar sesión con tu nueva contraseña.</p>
         <%
             }
-            // Nota: Los mensajes de error de validación del formulario de login (ej. campos vacíos)
-            // deberían manejarse en el LoginController antes de llegar aquí, o con JS en el cliente.
         %>
-        <%-- *** FIN DEL BLOQUE DE MENSAJES *** --%>
-
 
         <form action="login" method="POST">
             <div class="form-group">
@@ -153,18 +139,12 @@
         </form>
 
         <div class="links">
-            <%-- Enlace para ir a la página de crear usuario --%>
-            <%-- Asegúrate de que esta URL "Signup" coincida con el mapeo de tu CreateUsuarioController --%>
             <a href="Signup" class="Sign-up-link">¿No tienes cuenta? Crea una aquí.</a>
 
-            <%-- Enlace para ir a la página de olvidé mi contraseña --%>
-            <%-- Asegúrate de que esta URL "forgotPassword" coincida con el mapeo de tu ForgotPasswordController --%>
             <a href="forgotPassword" class="forgot-password-link">¿Olvidaste tu contraseña?</a>
         </div>
 
     </div>
-    <%-- Aquí podrías añadir otros contenedores si tuvieras más formularios apilados,
-         pero ahora la creación va en otra página. --%>
 
 </body>
 </html>
